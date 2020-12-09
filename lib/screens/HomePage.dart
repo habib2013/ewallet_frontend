@@ -6,8 +6,10 @@ import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:wallet_app/Network/NetworkHandler.dart';
 import 'package:wallet_app/screens/SendMoney.dart';
+import 'package:wallet_app/screens/TransactionHistory.dart';
 import 'package:wallet_app/screens/TransactionPage.dart';
-
+import 'package:wallet_app/widgets/payment_card.dart';
+import 'package:wallet_app/data/data.dart';
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -53,12 +55,29 @@ class _homePageState extends State<homePage> {
     //  }
   }
 
+  void sendMoney() async{
+//    print('Money Sent');
+    var customerID = await storage.read(key: 'customerID');
+    Map<String, String> data = {
+      "amount": _amountController.text,
+      "reference": "tkhgnfjdn562jjq",
+      "customerId": customerID,
+    };
+    var response = await networkHandler.postBleyt("wallet/credit", data);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+    } else {
+      print('send failed');
+    }
+
+
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Container(
-        padding: EdgeInsets.all(30),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -158,15 +177,15 @@ class _homePageState extends State<homePage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Features",
+                  "Send Money",
                   style: TextStyle(
                       fontSize: 21,
                       fontWeight: FontWeight.w800,
                       fontFamily: 'avenir'),
                 ),
                 Container(
-                  height: 60,
-                  width: 60,
+                  height: 45,
+                  width: 45,
                   decoration: BoxDecoration(
                       image: DecorationImage(
                           image: AssetImage('asset/images/scanqr.png'))),
@@ -180,88 +199,86 @@ class _homePageState extends State<homePage> {
                 child: Row(
                   children: [
                     InkWell(
-                      onTap: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => SendMoney()));
+                      onTap: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => SendMoney()));
                       },
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            height: 70,
-                            width: 70,
-                            margin: EdgeInsets.only(right: 20),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(0xffffac30),
-                            ),
-                            child: Icon(
-                              FeatherIcons.send,
-                              size: 40,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Center(child: Text('Send Money',style: TextStyle(color: Colors.black,fontFamily: 'ubuntu',fontSize: 18),)),
-                        ],
-                      ),),
-                    InkWell(
-                      onTap: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => TransactionPage()));
-                      },
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            height: 70,
-                            width: 70,
-                            margin: EdgeInsets.only(right: 20),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(0xffffac30),
-                            ),
-                            child: Icon(
-                              FeatherIcons.calendar,
-                              size: 40,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Center(child: Text('History',style: TextStyle(color: Colors.black,fontFamily: 'ubuntu',fontSize: 18),)),
-                        ],
-                      ),),
-                    InkWell(
-                      onTap: (){
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => TransactionPage()));
-                      },
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Container(
-                            height: 70,
-                            width: 70,
-                            margin: EdgeInsets.only(right: 20),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Color(0xffffac30),
-                            ),
-                            child: Icon(
-                              FeatherIcons.key,
-                              size: 40,
-                              color: Colors.white,
-                            ),
-                          ),
-                          Center(child: Text('Change PIN',style: TextStyle(color: Colors.black,fontFamily: 'ubuntu',fontSize: 18),)),
-                        ],
-                      ),),
+                      child: Container(
+                        height: 70,
+                        width: 70,
+                        margin: EdgeInsets.only(right: 20),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xffffac30),
+                        ),
+                        child: Icon(
+                          FeatherIcons.plus,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                    avatarWidget("img1", "Anna"),
+                    avatarWidget("img2", "Judith"),
+                    avatarWidget("img3", "Gillian"),
+                    avatarWidget("img4", "John"),
+                    avatarWidget("img10", "Annie"),
                   ],
                 ),
               ),
             ),
             SizedBox(
-              height: 20,
+              height: 30,
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Transaction History",
+                  style: TextStyle(
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'avenir'),
+                ),
+                Container(
+                  height: 25,
+                  width: 25,
+                  decoration: BoxDecoration(
+                      image: DecorationImage(
+                          image: AssetImage('asset/images/tag.png'))),
+                )
+              ],
             ),
 
+       SizedBox(height: 20,),
+            Column(
+
+              children: <Widget>[
+                NotificationListener<OverscrollIndicatorNotification>(
+                  onNotification: (overscroll) {
+                    overscroll.disallowGlow();
+                  },
+                  child: ListView.separated(
+                    physics: ClampingScrollPhysics(),
+                    shrinkWrap: true,
+                    separatorBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.only(left: 85.0),
+                        child: Divider(),
+                      );
+                    },
+                    padding: EdgeInsets.zero,
+                    itemCount:  getPaymentsCard().length,
+                    itemBuilder: (BuildContext context, int index) {
+                      return PaymentCardWidget(
+                        payment: getPaymentsCard()[index],
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -306,44 +323,52 @@ class _homePageState extends State<homePage> {
     );
   }
 
-  Container avatarWidget(String img, String name) {
+  Container avatarWidget(String img, String name)
+  {
     return Container(
       margin: EdgeInsets.only(right: 10),
-      height: 90,
-      width: 90,
+      height: 200,
+      width: 110,
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.all(Radius.circular(15)),
+          color: Color(0xfff1f3f6)
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           Container(
-            height: 40,
-            width: 40,
+            height: 60,
+            width: 60,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              image: DecorationImage(
-                  image: AssetImage('asset/images/$img.png'),
-                  fit: BoxFit.contain),
+                shape: BoxShape.circle,
+                color: Colors.white,
+                image: DecorationImage(
+                    image: AssetImage('asset/images/$img.jpg'),
+                    fit: BoxFit.contain
+                ),
+                border: Border.all(
+                    color: Colors.grey,
+                    width: 0.5
+                )
             ),
           ),
-          Text(
-            name,
-            style: TextStyle(
-                fontSize: 16,
-                fontFamily: 'avenir',
-                fontWeight: FontWeight.w700),
-          )
+          Text(name, style: TextStyle(
+              fontSize: 16,
+              fontFamily: 'ubuntu',
+              fontWeight: FontWeight.w700
+          ),)
         ],
       ),
     );
   }
-
   Widget _entryField(
     var editController,
     String title,
   ) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10),
-      width: MediaQuery.of(context).size.width / 3,
+      width: MediaQuery.of(context).size.width ,
+      padding: EdgeInsets.all(4),
       child: Column(
         children: <Widget>[
 //          Text(
@@ -359,6 +384,9 @@ class _homePageState extends State<homePage> {
                   ? TextInputType.number
                   : TextInputType.text,
               decoration: InputDecoration(
+                suffixIcon: IconButton(icon: Icon(FeatherIcons.send,color: Colors.orange,size: 30,), onPressed: (){
+                  sendMoney();
+                }),
                   hintText: title,
                   border: InputBorder.none,
                   fillColor: Color(0xfff3f3f4),
@@ -384,19 +412,7 @@ class _homePageState extends State<homePage> {
   Widget _submitButton(BuildContext context) {
     return InkWell(
       onTap: () async {
-        var customerID = await storage.read(key: 'customerID');
-        Map<String, String> data = {
-          "amount": _amountController.text,
-          "reference": "tkhgnfjdn562jjs",
-          "customerId": customerID,
-        };
-        var response = await networkHandler.postBleyt("wallet/credit", data);
-        if (response.statusCode == 200 || response.statusCode == 201) {
-        } else {
-          print('send failed');
-        }
 
-        print('Money Sent');
       },
       child: Container(
         width: MediaQuery.of(context).size.width / 3,
@@ -426,6 +442,8 @@ class _homePageState extends State<homePage> {
         ),
       ),
     );
+
+
   }
 
   Widget bottomSheet() {
@@ -454,14 +472,9 @@ class _homePageState extends State<homePage> {
                     child: Column(
                       children: [
                         SizedBox(height: 10),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            _formFieldWidget(),
-                            SizedBox(width: 12),
-                            _submitButton(context),
-                          ],
-                        )
+                        _formFieldWidget(),
+//                        SizedBox(width: 12),
+//                        _submitButton(context)
                       ],
                     ),
                   ))),

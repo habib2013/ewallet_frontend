@@ -8,6 +8,8 @@ import 'package:wallet_app/screens/HomePage.dart';
 import 'package:wallet_app/screens/HomeWithSidebar.dart';
 import 'package:wallet_app/screens/LoginPage.dart';
 import 'package:wallet_app/screens/SignupPage.dart';
+
+
 void main() {
   runApp(MyApp());
 }
@@ -18,7 +20,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: SplashScreen(),
+      home: HomeWithSidebar(),
 
     );
   }

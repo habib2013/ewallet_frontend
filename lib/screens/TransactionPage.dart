@@ -9,7 +9,7 @@ class Transaction {
   int createdMillis;
   Transaction({this.name, this.point, this.createdMillis});
 }
-List<Transaction> transactions = List.generate(20, (index) {
+List<Transaction> transactions = List.generate(5, (index) {
   var random = new Random();
   bool isRedeem = random.nextBool();
   String name = isRedeem ? "Redeem PS" : "Awarded Point";
@@ -52,7 +52,7 @@ class _TransactionPageState extends State<TransactionPage> {
     String today = DateFormat("EEE, MMM d, y").format(DateTime.now());
     String yesterday = DateFormat("EEE, MMM d, y").format(DateTime.now().add(Duration(days: -1)));
     return ListView.builder(
-      itemCount: transactions.length,
+      itemCount: 2,
       itemBuilder: (context, index) {
         Transaction transaction = transactions[index];
         DateTime date =
