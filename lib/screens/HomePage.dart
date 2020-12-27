@@ -5,11 +5,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:wallet_app/Network/NetworkHandler.dart';
+import 'package:wallet_app/bloc/getTransacationsBloc.dart';
+import 'package:wallet_app/elements/loader_element.dart';
+import 'package:wallet_app/models/transaction_history.dart';
+import 'package:wallet_app/models/transaction_history_source.dart';
 import 'package:wallet_app/screens/SendMoney.dart';
 import 'package:wallet_app/screens/TransactionHistory.dart';
 import 'package:wallet_app/screens/TransactionPage.dart';
 import 'package:wallet_app/widgets/payment_card.dart';
 import 'package:wallet_app/data/data.dart';
+import 'package:timeago/timeago.dart' as timeago;
+
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -34,6 +40,7 @@ class _homePageState extends State<homePage> {
 
   @override
   void initState() {
+    getTransactionsBloc..getTransactions('c46a7836-5762-45ee-98b1-0e63359a22f0');
     getAcustomer();
     super.initState();
   }
@@ -77,7 +84,7 @@ class _homePageState extends State<homePage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(12),
+        padding: EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -91,8 +98,8 @@ class _homePageState extends State<homePage> {
                       height: 50,
                       decoration: BoxDecoration(
                           image: DecorationImage(
-                        image: AssetImage('asset/images/logo.png'),
-                      )),
+                            image: AssetImage('asset/images/logo.png'),
+                          )),
                     ),
                     SizedBox(
                       width: 5,
@@ -251,7 +258,7 @@ class _homePageState extends State<homePage> {
               ],
             ),
 
-       SizedBox(height: 20,),
+            SizedBox(height: 20,),
             Column(
 
               children: <Widget>[
@@ -259,21 +266,23 @@ class _homePageState extends State<homePage> {
                   onNotification: (overscroll) {
                     overscroll.disallowGlow();
                   },
-                  child: ListView.separated(
-                    physics: ClampingScrollPhysics(),
-                    shrinkWrap: true,
-                    separatorBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.only(left: 85.0),
-                        child: Divider(),
-                      );
-                    },
-                    padding: EdgeInsets.zero,
-                    itemCount:  getPaymentsCard().length,
-                    itemBuilder: (BuildContext context, int index) {
-                      return PaymentCardWidget(
-                        payment: getPaymentsCard()[index],
-                      );
+                  child: StreamBuilder<TransactionResponse>(
+                    stream: getTransactionsBloc.subject.stream,
+                    builder: (context, AsyncSnapshot<TransactionResponse> snapshot) {
+                      if (snapshot.hasData) {
+                        if (snapshot.data.error != null &&
+                            snapshot.data.error.length > 0) {
+                          return Container(
+                            child: Text('this is an error1'),
+                          );
+                        }
+                        return TransactionsList(snapshot.data);
+                        // return Text('there is data here');
+                      } else if (snapshot.hasError) {
+                        return Container(child: Text('this is an error2'),);
+                      } else {
+                        return buildLoaderWidget();
+                      }
                     },
                   ),
                 ),
@@ -283,6 +292,100 @@ class _homePageState extends State<homePage> {
         ),
       ),
     );
+  }
+
+
+  Widget TransactionsList(TransactionResponse data){
+    List<TransactionHistoryModel> transactions = data.transactions;
+    if (transactions.length == 0 ) {
+      return Container(
+        width: MediaQuery.of(context).size.width,
+
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Column(
+              children: <Widget>[
+                Text(
+                  "No transaction history",
+                  style: TextStyle(color: Colors.black45),
+                )
+              ],
+            )
+          ],
+        ),
+      );
+    }
+    else {
+      return ListView.separated(
+        physics: ClampingScrollPhysics(),
+        shrinkWrap: true,
+        separatorBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.only(left: 5.0),
+            child: Divider(),
+          );
+        },
+        padding: EdgeInsets.zero,
+        itemCount:  transactions.length,
+        itemBuilder: (BuildContext context, int index) {
+         return ListTile(
+            dense: true,
+            trailing: Text(
+              " \₦ ${transactions[index].amount}",
+              style: TextStyle(
+                  inherit: true, fontWeight: FontWeight.bold, fontSize: 13.0,  color: transactions[index].Transactiontype == 'DEBIT' ? Colors.red : Colors.green),
+            ),
+
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                Text(
+                  transactions[index].description,
+                  style: TextStyle(
+                      inherit: true, fontWeight: FontWeight.bold, fontSize: 14.0,color: transactions[index].Transactiontype == 'DEBIT' ? Colors.red : Colors.green,fontFamily: 'ubuntu'),
+                ),
+              ],
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Text(timeAgo(DateTime.parse(transactions[index].createdAt),),
+                      style: TextStyle(
+                          inherit: true, fontSize: 11.0, color: Colors.green)),
+                  SizedBox(
+                    width: 20,
+                  ),
+                  Text(transactions[index].Transactiontype,
+                      style: TextStyle(
+                          inherit: true, fontSize: 11.0, color:  Colors.black)),
+                  SizedBox(
+                    width: 20,
+                  ),
+                  IconButton(icon: transactions[index].category == 'WALLET_DEBITED_BY_MERCHANT' ? Icon(FeatherIcons.trendingDown,color: Colors.black45,) : Icon(FeatherIcons.trendingUp,color: Colors.green,) , onPressed: (){
+                    print('preseed');
+                  }),
+                  SizedBox(
+                    width: 20,
+                  ),
+                  IconButton(icon: Icon(FeatherIcons.moreHorizontal,color: Colors.black45,), onPressed: (){
+                    print('preseed');
+                  }),
+
+                  Spacer(),
+                ],
+              ),
+            ),
+          );
+          // return Text('All Trans');
+        },
+      );
+    }
+
+
   }
 
   Column serviceWidget(String img, String name) {
@@ -362,9 +465,9 @@ class _homePageState extends State<homePage> {
     );
   }
   Widget _entryField(
-    var editController,
-    String title,
-  ) {
+      var editController,
+      String title,
+      ) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 10),
       width: MediaQuery.of(context).size.width ,
@@ -384,9 +487,9 @@ class _homePageState extends State<homePage> {
                   ? TextInputType.number
                   : TextInputType.text,
               decoration: InputDecoration(
-                suffixIcon: IconButton(icon: Icon(FeatherIcons.send,color: Colors.orange,size: 30,), onPressed: (){
-                  sendMoney();
-                }),
+                  suffixIcon: IconButton(icon: Icon(FeatherIcons.send,color: Colors.orange,size: 30,), onPressed: (){
+                    sendMoney();
+                  }),
                   hintText: title,
                   border: InputBorder.none,
                   fillColor: Color(0xfff3f3f4),
@@ -468,20 +571,24 @@ class _homePageState extends State<homePage> {
                   padding: EdgeInsets.symmetric(horizontal: 10),
                   child: SingleChildScrollView(
                       child: Form(
-                    key: _globalKey,
-                    child: Column(
-                      children: [
-                        SizedBox(height: 10),
-                        _formFieldWidget(),
+                        key: _globalKey,
+                        child: Column(
+                          children: [
+                            SizedBox(height: 10),
+                            _formFieldWidget(),
 //                        SizedBox(width: 12),
 //                        _submitButton(context)
-                      ],
-                    ),
-                  ))),
+                          ],
+                        ),
+                      ))),
             ],
           ),
         ],
       ),
     );
+  }
+
+  String timeAgo(DateTime date){
+    return timeago.format(date,allowFromNow: true,locale: 'en');
   }
 }

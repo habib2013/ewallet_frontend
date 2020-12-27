@@ -84,7 +84,7 @@ class _homeWithSidebarState extends State<homeWithSidebar> with TickerProviderSt
                               shape: BoxShape.circle,
                               color: Color(0xfff1f3f6),
                               image: DecorationImage(
-                                image: AssetImage('asset/images/avatar4.png'),
+                                image: AssetImage('asset/images/img3.jpg'),
                                 fit: BoxFit.contain
                               )
                             ),
@@ -98,7 +98,7 @@ class _homeWithSidebarState extends State<homeWithSidebar> with TickerProviderSt
                                 fontSize: 19,
                                 fontWeight: FontWeight.w700
                               ),),
-                              Text("Seattle Washington", style: TextStyle(
+                              Text("Lagos Nigeria", style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w400,
                                 color: Colors.grey

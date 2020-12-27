@@ -9,6 +9,7 @@ import 'package:wallet_app/screens/HomeWithSidebar.dart';
 import 'package:wallet_app/screens/NoWalletYet.dart';
 import 'package:wallet_app/screens/SignupPage.dart';
 
+
 class LoginPage extends StatefulWidget {
   LoginPage({Key key, this.title}) : super(key: key);
 
@@ -30,6 +31,7 @@ class _LoginPageState extends State<LoginPage> {
   bool circular = false;
   final storage = new FlutterSecureStorage();
 
+
   Widget _backButton() {
     return InkWell(
       onTap: () {
@@ -42,7 +44,10 @@ class _LoginPageState extends State<LoginPage> {
             Container(
               padding: EdgeInsets.only(left: 0, top: 10, bottom: 10),
               child: Icon(
-                FeatherIcons.arrowLeftCircle, color: Colors.black, size: 35,),
+                FeatherIcons.arrowLeftCircle,
+                color: Colors.black,
+                size: 35,
+              ),
             ),
             Text('',
                 style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500))
@@ -67,6 +72,17 @@ class _LoginPageState extends State<LoginPage> {
             height: 10,
           ),
           TextFormField(
+              validator: (value) {
+                if (value.isEmpty) {
+                  return "${title} cannot be empty";
+                }
+                if (title == 'Email' && !value.contains('@')) {
+                  return 'Email is Invalid';
+                }
+                if ((title == 'Password' || title == 'Confirm Password') && value.length <= 8) {
+                  return 'Password can\'t be less than 8';
+                }
+              },
               obscureText: isPassword && vis,
               controller: editController,
               decoration: InputDecoration(
@@ -77,15 +93,15 @@ class _LoginPageState extends State<LoginPage> {
                       : Icon(Icons.lock),
                   suffixIcon: isPassword == true
                       ? IconButton(
-                    icon: vis
-                        ? Icon(Icons.visibility_off)
-                        : Icon(Icons.visibility),
-                    onPressed: () {
-                      setState(() {
-                        vis = !vis;
-                      });
-                    },
-                  )
+                          icon: vis
+                              ? Icon(Icons.visibility_off)
+                              : Icon(Icons.visibility),
+                          onPressed: () {
+                            setState(() {
+                              vis = !vis;
+                            });
+                          },
+                        )
                       : null,
                   border: InputBorder.none,
                   fillColor: Color(0xfff3f3f4),
@@ -101,60 +117,76 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _submitButton() {
+
     return InkWell(
-      onTap: () async {
+      onTap: ()  async{
         setState(() {
-          circular = true;
+
+//          circular = true;
         });
-        Map<String, String> data = {
-          "email": _emailEditingController.text,
-          "password": _passwordEditingController.text,
-        };
-        var response = await networkHandler.post("login", data);
+        if (_globalKey.currentState.validate()) {
 
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          Map<String, dynamic> output = json.decode(response.body);
+          Map<String, String> data = {
+            "email": _emailEditingController.text,
+            "password": _passwordEditingController.text,
+          };
+          var response = await networkHandler.post("login", data);
+          if (response.statusCode == 200 || response.statusCode == 201) {
+
+            Map<String, dynamic> output = json.decode(response.body);
 //          print(output['token']);
-          var userID = output['userID'].toString();
-          var name = output['name'];
-          var customerID = output['customerID'];
-          print("userID is ${userID} and name is ${name} and customerID ${customerID}");
+            var userID = output['userID'].toString();
+            var name = output['name'];
+            var customerID = output['customerID'];
+            print(
+                "userID is ${userID} and name is ${name} and customerID ${customerID}");
 
-          await storage.write(key: "userID", value: userID);
-          await storage.write(key: "token", value: output['userToken']);
-          await storage.write(key: "name", value: output['name']);
+            await storage.write(key: "userID", value: userID);
+            await storage.write(key: "token", value: output['userToken']);
+            await storage.write(key: "name", value: output['name']);
 
-          setState(() {
-            validate = true;
+            setState(() {
+              validate = true;
+              circular = false;
+            });
+            if (output['customerID'] != 'null') {
+              await storage.write(
+                  key: "customerID", value: output['customerID']);
+              Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomeWithSidebar()),
+                      (route) => false);
+            } else {
+              Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => NoWalletYet()),
+                      (route) => false);
+            }
+          }
+
+          else if(response.statusCode == 404) {
             circular = false;
-          });
-          if (output['customerID'] != 'null') {
-            await storage.write(key: "customerID", value: output['customerID']);
-            Navigator.pushAndRemoveUntil(context,
-                MaterialPageRoute(builder: (context) => HomeWithSidebar()), (
-                    route) => false);
+
           }
           else {
-            Navigator.pushAndRemoveUntil(context,
-                MaterialPageRoute(builder: (context) => NoWalletYet()), (
-                    route) => false);
+//          String output = json.decode(response.body);
+
+            setState(() {
+              validate = false;
+//            errorText = output;
+              circular = false;
+            });
           }
 
+
         }
-        else {
-          String output = json.decode(response.body);
-          setState(() {
-            validate = false;
-            errorText = output;
-            circular = false;
-          });
-        }
+
+
+
+
       },
       child: Container(
-        width: MediaQuery
-            .of(context)
-            .size
-            .width,
+        width: MediaQuery.of(context).size.width,
         padding: EdgeInsets.symmetric(vertical: 15),
         alignment: Alignment.center,
         decoration: BoxDecoration(
@@ -176,12 +208,10 @@ class _LoginPageState extends State<LoginPage> {
         child: circular
             ? CircularProgressIndicator()
             : Text(
-          'Login',
-          style: TextStyle(
-              fontSize: 24,
-              color: Colors.white,
-              fontFamily: 'ubuntu'),
-        ),
+                'Login',
+                style: TextStyle(
+                    fontSize: 24, color: Colors.white, fontFamily: 'ubuntu'),
+              ),
       ),
     );
   }
@@ -316,17 +346,16 @@ class _LoginPageState extends State<LoginPage> {
           decoration: BoxDecoration(
               image: DecorationImage(
                   image: AssetImage('asset/images/logo.png'),
-                  fit: BoxFit.contain
-              )
-          ),
+                  fit: BoxFit.contain)),
         ),
-        Text("eWallet", style: TextStyle(
-            fontSize: 50,
-            fontFamily: 'ubuntu',
-            fontWeight: FontWeight.w600
-        ),),
-        SizedBox(height: 10,),
-
+        Text(
+          "eWallet",
+          style: TextStyle(
+              fontSize: 50, fontFamily: 'ubuntu', fontWeight: FontWeight.w600),
+        ),
+        SizedBox(
+          height: 10,
+        ),
       ],
     );
   }
@@ -342,59 +371,55 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final height = MediaQuery
-        .of(context)
-        .size
-        .height;
+    final height = MediaQuery.of(context).size.height;
     return Scaffold(
         body: Container(
-          color: Colors.grey[100],
-          height: height,
-          child: Stack(
-            children: <Widget>[
-
-              Container(
-                color: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 20),
-                child: SingleChildScrollView(
-                  child: Form(
-                    key: _globalKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: <Widget>[
-                        SizedBox(height: height * .2),
-                        _title(),
-                        SizedBox(height: 50),
-                        _emailPasswordWidget(),
-                        SizedBox(height: 20),
-                        _submitButton(),
-                        Container(
-                          padding: EdgeInsets.symmetric(vertical: 10),
-                          alignment: Alignment.centerRight,
-                          child: InkWell(
-                            onTap: () {
-                              Navigator.push(context, MaterialPageRoute(
+      color: Colors.grey[100],
+      height: height,
+      child: Stack(
+        children: <Widget>[
+          Container(
+            color: Colors.white,
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: SingleChildScrollView(
+              child: Form(
+                key: _globalKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    SizedBox(height: height * .2),
+                    _title(),
+                    SizedBox(height: 50),
+                    _emailPasswordWidget(),
+                    SizedBox(height: 20),
+                    _submitButton(),
+                    Container(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      alignment: Alignment.centerRight,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
                                   builder: (context) => ForgotPassword()));
-                            },
-                            child: Text('Forgot Password ?',
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    fontFamily: 'Josefin Sans')),
-                          ),
-                        ),
-
-                        _createAccountLabel(),
-                      ],
+                        },
+                        child: Text('Forgot Password ?',
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                fontFamily: 'Josefin Sans')),
+                      ),
                     ),
-                  ),
+                    _createAccountLabel(),
+                  ],
                 ),
               ),
-              Positioned(top: 40, left: 0, child: _backButton()),
-            ],
+            ),
           ),
-        )
-    );
+          Positioned(top: 40, left: 0, child: _backButton()),
+        ],
+      ),
+    ));
   }
 }
