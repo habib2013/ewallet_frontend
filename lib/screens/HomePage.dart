@@ -1,20 +1,23 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_feather_icons/flutter_feather_icons.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:wallet_app/Network/NetworkHandler.dart';
 import 'package:wallet_app/bloc/getTransacationsBloc.dart';
 import 'package:wallet_app/elements/loader_element.dart';
 import 'package:wallet_app/models/transaction_history.dart';
 import 'package:wallet_app/models/transaction_history_source.dart';
+import 'package:wallet_app/screens/PdfPreviewScreen.dart';
 import 'package:wallet_app/screens/SendMoney.dart';
-import 'package:wallet_app/screens/TransactionHistory.dart';
-import 'package:wallet_app/screens/TransactionPage.dart';
-import 'package:wallet_app/widgets/payment_card.dart';
-import 'package:wallet_app/data/data.dart';
 import 'package:timeago/timeago.dart' as timeago;
+
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:wallet_app/screens/pdfDownloadHandler.dart';
 
 class HomePage extends StatelessWidget {
   @override
@@ -32,6 +35,54 @@ class homePage extends StatefulWidget {
 }
 
 class _homePageState extends State<homePage> {
+
+  final pdf = pw.Document();
+
+  writeToPdf(){
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        margin: pw.EdgeInsets.all(32),
+        build: (pw.Context context){
+          return <pw.Widget>[
+            pw.Header(
+              level: 0,
+              child: pw.Text('Test Hello world'),
+
+            ),
+            pw.Paragraph(
+              text:'Next.js is a JavaScript framework created by Zeit. It lets you build server-side rendering and static web applications using React. Its a great tool to build your next website. It has many great features and advantages, which can make Nextjs your first option for building your next web application.',
+            ),
+            pw.Paragraph(
+              text:'Next.js is a JavaScript framework created by Zeit. It lets you build server-side rendering and static web applications using React. Its a great tool to build your next website. It has many great features and advantages, which can make Nextjs your first option for building your next web application.',
+            ),
+            pw.Paragraph(
+              text:'Next.js is a JavaScript framework created by Zeit. It lets you build server-side rendering and static web applications using React. Its a great tool to build your next website. It has many great features and advantages, which can make Nextjs your first option for building your next web application.',
+            ),
+            pw.Header(
+              level: 1,
+              child: pw.Text('this is a sub test'),
+            ),
+            pw.Paragraph(
+              text:'Next.js is a JavaScript framework created by Zeit. It lets you build server-side rendering and static web applications using React. Its a great tool to build your next website. It has many great features and advantages, which can make Nextjs your first option for building your next web application.',
+            ),
+          ];
+      }
+      )
+    );
+  }
+
+  Future savePdf() async{
+    Directory documentDirectory = await getApplicationDocumentsDirectory();
+
+    String documentPath = documentDirectory.path;
+
+    File file = File("$documentPath/example.pdf");
+
+    file.writeAsBytesSync(pdf.save());
+  }
+
+
   final storage = new FlutterSecureStorage();
   var bookedbalance = 0;
   TextEditingController _amountController = TextEditingController();
@@ -43,6 +94,42 @@ class _homePageState extends State<homePage> {
     getTransactionsBloc..getTransactions('c46a7836-5762-45ee-98b1-0e63359a22f0');
     getAcustomer();
     super.initState();
+  }
+
+  Future<void> _TransactionDetails(String description,String category,String source,) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Row(
+            children: [
+              Text(description,style: TextStyle(fontFamily: 'ubuntu',fontSize: 13,color: Colors.black),),
+              SizedBox(width: 2,),
+              IconButton(icon: Icon(FeatherIcons.download),onPressed: null,)
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text(category),
+                Text(source),
+                Text('This is a demo alert dialog.'),
+                Text('Would you like to approve of this message?'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Exit!'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void getAcustomer() async {
@@ -210,7 +297,7 @@ class _homePageState extends State<homePage> {
                         Navigator.push(
                             context,
                             MaterialPageRoute(
-                                builder: (context) => SendMoney()));
+                                builder: (context) => PdfDownloader()));
                       },
                       child: Container(
                         height: 70,
@@ -291,7 +378,26 @@ class _homePageState extends State<homePage> {
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: ()async{
+      writeToPdf();
+      await savePdf();
+
+      Directory documentDirectory = await getApplicationDocumentsDirectory();
+
+      String documentPath = documentDirectory.path;
+
+      String fullPath = "$documentPath/example.pdf";
+
+      Navigator.push(context, MaterialPageRoute(
+          builder: (context) => PdfPreviewScreen(path: fullPath,)
+      ));
+
+    },
+    child: Icon(Icons.save),
+    ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+
   }
 
 
@@ -371,8 +477,8 @@ class _homePageState extends State<homePage> {
                   SizedBox(
                     width: 20,
                   ),
-                  IconButton(icon: Icon(FeatherIcons.moreHorizontal,color: Colors.black45,), onPressed: (){
-                    print('preseed');
+                  IconButton(icon: Icon(Icons.picture_as_pdf_outlined,color: Colors.black45,), onPressed: (){
+                    _TransactionDetails(transactions[index].description,transactions[index].category,transactions[index].source);
                   }),
 
                   Spacer(),
@@ -426,8 +532,7 @@ class _homePageState extends State<homePage> {
     );
   }
 
-  Container avatarWidget(String img, String name)
-  {
+  Container avatarWidget(String img, String name) {
     return Container(
       margin: EdgeInsets.only(right: 10),
       height: 200,

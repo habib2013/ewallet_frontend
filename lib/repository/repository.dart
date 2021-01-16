@@ -27,7 +27,6 @@ class WalletRepository {
       Response response = await _dio.get(getCustomerTransactions,queryParameters: params);
       // print(response.data);
       return TransactionResponse.fromJson(response.data);
-
     }
     catch(error){
     return TransactionResponse.withError(error);
